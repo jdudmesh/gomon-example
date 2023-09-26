@@ -13,7 +13,7 @@ func main() {
 	e := echo.New()
 	e.Static("/assets", "./static")
 
-	t, err := templates.New("views/*.html", e.Logger)
+	t, err := templates.NewEcho("views/*.html", e.Logger)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
@@ -29,13 +29,13 @@ func main() {
 		return c.Render(http.StatusOK, "index.html", nil)
 	})
 
+	e.GET("/other", func(c echo.Context) error {
+		return c.Render(http.StatusOK, "other.html", nil)
+	})
+
 	if p, ok := os.LookupEnv("PORT"); ok {
 		e.Logger.Fatal(e.Start(":" + p))
 	} else {
 		e.Logger.Fatal(e.Start(":8080"))
 	}
 }
-
-/*
-zzccx
-*/

@@ -1,6 +1,8 @@
 // vite.config.js
+import { resolve } from "path"
 /** @type {import('vite').UserConfig} */
 export default {
+  root: resolve(__dirname),
   base: '/assets/dist',
   build: {
     outDir: '../static/dist',
@@ -11,6 +13,11 @@ export default {
         assetFileNames: '[name].[ext]',
       }
     },
+  },
+  server: {
+    watch: {
+      ignored: ["**/views/**"]
+    }
   },
   plugins: [],
 }

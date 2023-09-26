@@ -5,7 +5,7 @@
   "license": "Proprietary",
   "scripts": {
     "dev": "vite",
-    "build:watch": "vite build --watch",
+    "build:watch": "vite build --emptyOutDir --watch",
     "build": "vite build",
     "lint": "eslint . --ext .ts",
     "lint:fix": "eslint . --ext .ts --fix",
