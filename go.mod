@@ -2,7 +2,10 @@ module gohtmx
 
 go 1.20
 
-require github.com/labstack/echo/v4 v4.11.1
+require (
+	github.com/jdudmesh/gomon-client v0.1.1
+	github.com/labstack/echo/v4 v4.11.1
+)
 
 require (
 	github.com/Microsoft/go-winio v0.6.1 // indirect
@@ -19,7 +22,3 @@ require (
 	golang.org/x/text v0.13.0 // indirect
 	golang.org/x/tools v0.13.0 // indirect
 )
-
-require github.com/jdudmesh/gomon/pkg/client v0.0.0
-
-replace github.com/jdudmesh/gomon/pkg/client v0.0.0 => ../gomon-client
