@@ -1,0 +1,90 @@
+package console
+
+templ Event(ev *LogEvent) {
+	<div class="flex flex-row text-blue-400 font-mono" data-event-date="{ev.CreatedAt}">
+		<div class="w-1/6">{ ev.CreatedAt.Format("15:04:05.000") }</div>
+		<div class="w-5/6 break-all">{ ev.EventData }</div>
+	</div>
+}
+
+templ Console(currentRun int, runs []LogRun, events []LogEvent) {
+	<!DOCTYPE html>
+	<html>
+		<head>
+			<title>gomon console</title>
+			<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+			<script src="https://cdn.tailwindcss.com"></script>
+			<link href="https://cdn.jsdelivr.net/npm/daisyui@3.9.3/dist/full.css" rel="stylesheet" type="text/css"/>
+		</head>
+		<body class="bg-slate-900 text-white flex flex-col h-screen">
+			<nav x-data class="grow-0 flex flex-row mx-2 p-2 justify-between items-center">
+				<div class="flex flex-row">
+					<a href="/" class="text-2xl text-bold">gomon</a>
+				</div>
+				<div class="flex flex-row items-center gap-2">
+					<label class="px-4">Filter:</label>
+					<select class="select select-bordered text-slate-900">
+						<option value="all" selected>all</option>
+						<option value="stdout">stdout</option>
+						<option value="stderr">stderr</option>
+					</select>
+					<label class="px-4">Run:</label>
+					<select class="select select-bordered text-slate-900">
+						for _, r := range runs {
+							<option
+ 								value="{r.ID}"
+ 								if int(r.ID) == currentRun {
+									selected?={ true }
+								}
+							>{ r.CreatedAt.Format("2006-01-02 15:04:05") }</option>
+						}
+					</select>
+					<button id="btn-clear" class="btn btn-primary" @click="clearConsole">Clear</button>
+					<button id="btn-restart" class="btn btn-secondary" @click="hardRestart">Hard Restart</button>
+				</div>
+			</nav>
+			<main id="event-list" class="grow flex flex-col justify-end mx-4 my-2 p-4 border-solid border border-blue-400 rounded-lg">
+				for _, ev := range events {
+					@Event(&ev)
+				}
+			</main>
+			<script>
+				const eventList = document.getElementById("event-list");
+				function listen() {
+					const logSource = new EventSource("/__gomon__/events?stream=logs", {
+						withCredentials: true,
+					});
+
+					const runSource = new EventSource("/__gomon__/events?stream=runs", {
+						withCredentials: true,
+					});
+
+					logSource.onmessage = (event) => {
+						eventList.insertAdjacentHTML("beforeend", event.data);
+						eventList.scrollTop = eventList.scrollHeight;
+					};
+
+					runSource.onmessage = (event) => {
+						window.location = window.location;
+					};
+				}
+
+				function clearConsole() {
+					eventList.innerHTML = "";
+				}
+
+				async function hardRestart() {
+					console.log("hard restart");
+					const res = await fetch("/restart", {
+						method: "POST"
+					})
+				}
+
+				document.addEventListener('alpine:init', () => {
+					console.log("alpine init");
+				});
+			</script>
+		</body>
+	</html>
+}
+
