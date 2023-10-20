@@ -1,10 +1,14 @@
 package console
 
-templ Event(ev *LogEvent) {
-	<div class="flex flex-row text-blue-400 font-mono" data-event-date="{ev.CreatedAt}">
-		<div class="w-1/6">{ ev.CreatedAt.Format("15:04:05.000") }</div>
-		<div class="w-5/6 break-all">{ ev.EventData }</div>
-	</div>
+import "strconv"
+
+templ EventList(events []LogEvent) {
+	for _, ev := range events {
+		<div class="flex flex-row text-blue-400 font-mono" data-event-date="{ev.CreatedAt}">
+			<div class="w-1/6">{ ev.CreatedAt.Format("15:04:05.000") }</div>
+			<div class="w-5/6 break-all">{ ev.EventData }</div>
+		</div>
+	}
 }
 
 templ Console(currentRun int, runs []LogRun, events []LogEvent) {
@@ -12,43 +16,45 @@ templ Console(currentRun int, runs []LogRun, events []LogEvent) {
 	<html>
 		<head>
 			<title>gomon console</title>
-			<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+			<script src="https://unpkg.com/htmx.org@1.9.6" integrity="sha384-FhXw7b6AlE/jyjlZH5iHa/tTe9EpJ1Y55RjcgPbjeWMskSxZt1v9qkxLJWNJaGni" crossorigin="anonymous"></script>
 			<script src="https://cdn.tailwindcss.com"></script>
 			<link href="https://cdn.jsdelivr.net/npm/daisyui@3.9.3/dist/full.css" rel="stylesheet" type="text/css"/>
+			<style>#event-list > :first-child { margin-top: auto !important; }</style>
 		</head>
-		<body class="bg-slate-900 text-white flex flex-col h-screen">
-			<nav x-data class="grow-0 flex flex-row mx-2 p-2 justify-between items-center">
+		<body class="bg-slate-900 text-white flex flex-col h-screen" data-current-run={ strconv.Itoa( currentRun) }>
+			<nav class="grow-0 flex flex-row mx-2 p-2 justify-between items-center">
 				<div class="flex flex-row">
 					<a href="/" class="text-2xl text-bold">gomon</a>
 				</div>
 				<div class="flex flex-row items-center gap-2">
 					<label class="px-4">Filter:</label>
-					<select class="select select-bordered text-slate-900">
+					<input type="text" name="filter" class="input input-bordered text-slate-900" placeholder="filter" data-send="true"/>
+					<label class="px-4">Stream:</label>
+					<select name="stm" class="select select-bordered text-slate-900" hx-get="/run/events" hx-include="[data-send=&#39;true&#39;]" hx-target="#event-list" hx-trigger="input" data-send="true">
 						<option value="all" selected>all</option>
 						<option value="stdout">stdout</option>
 						<option value="stderr">stderr</option>
 					</select>
 					<label class="px-4">Run:</label>
-					<select class="select select-bordered text-slate-900">
+					<select name="run" class="select select-bordered text-slate-900" hx-get="/run/events" hx-include="[data-send=&#39;true&#39;]" hx-target="#event-list" hx-trigger="input" data-send="true">
 						for _, r := range runs {
 							<option
- 								value="{r.ID}"
+ 								value={ strconv.Itoa(r.ID) }
  								if int(r.ID) == currentRun {
 									selected?={ true }
 								}
 							>{ r.CreatedAt.Format("2006-01-02 15:04:05") }</option>
 						}
 					</select>
-					<button id="btn-clear" class="btn btn-primary" @click="clearConsole">Clear</button>
+					<button id="btn-search" class="btn btn-primary" hx-get="/run/events" hx-include="[data-send=&#39;true&#39;]" hx-target="#event-list" hx-trigger="click">Search</button>
 					<button id="btn-restart" class="btn btn-secondary" @click="hardRestart">Hard Restart</button>
 				</div>
 			</nav>
-			<main id="event-list" class="grow flex flex-col justify-end mx-4 my-2 p-4 border-solid border border-blue-400 rounded-lg">
-				for _, ev := range events {
-					@Event(&ev)
-				}
+			<main id="event-list" class="grow mx-4 my-2 p-4 border-solid border border-blue-400 rounded-lg flex flex-col overflow-y-auto">
+				@EventList(events)
 			</main>
 			<script>
+				const currentRun = document.body.getAttribute("data-current-run");
 				const eventList = document.getElementById("event-list");
 				function listen() {
 					const logSource = new EventSource("/__gomon__/events?stream=logs", {
@@ -60,12 +66,16 @@ templ Console(currentRun int, runs []LogRun, events []LogEvent) {
 					});
 
 					logSource.onmessage = (event) => {
+						const selectedRun = document.querySelector("select[name=run]").value;
+						if (selectedRun != currentRun) {
+							return;
+						}
 						eventList.insertAdjacentHTML("beforeend", event.data);
 						eventList.scrollTop = eventList.scrollHeight;
 					};
 
 					runSource.onmessage = (event) => {
-						window.location = window.location;
+						window.location.reload();
 					};
 				}
 
@@ -80,9 +90,7 @@ templ Console(currentRun int, runs []LogRun, events []LogEvent) {
 					})
 				}
 
-				document.addEventListener('alpine:init', () => {
-					console.log("alpine init");
-				});
+				listen();
 			</script>
 		</body>
 	</html>
