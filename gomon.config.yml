@@ -16,7 +16,7 @@ softReload:
 generated:
   "*.templ":
     - "templ generate"
-    - "__hard_reload"
+    - __hard_reload
 
 envFiles:
   - ".env"
@@ -27,7 +27,7 @@ proxy:
   enabled: true
   port: 4000
   downstream:
-    host: localhost:8081
+    host: localhost:8080
     timeout: 5
 ui:
   enabled: true
